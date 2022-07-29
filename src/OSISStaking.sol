@@ -61,19 +61,22 @@ contract MBStaking is Ownable, IERC721Receiver {
     mapping(uint256 => uint256) public vaultTokenIndex;
     mapping(address => mapping(uint256 => uint256)) public vaultToken;
 
+    uint256 tier1Reward = 200 ether; // 2 MBG
+    uint256 tier2Reward = 100 ether; // 1 MBG
+
     constructor(ERC721Enumerable _nft, OSIS _token) {
         nft = _nft;
         token = _token;
     }
 
-    function saveUserStakedTokenId(uint256 tokenId) internal {
-        uint256 vaultId = vaultTokenCount[msg.sender];
-        vaultToken[msg.sender][vaultId] = tokenId;
-        vaultTokenIndex[tokenId] = vaultId;
-        vaultTokenCount[msg.sender]++;
+    function saveUserStakedTokenId(uint256 tokenId) public {
+         uint256 vaultId = vaultTokenCount[msg.sender];
+         vaultToken[msg.sender][vaultId] = tokenId;
+         vaultTokenIndex[tokenId] = vaultId;
+         vaultTokenCount[msg.sender]++;
     }
 
-    function removeUserStakedTokenId(uint256 tokenId) internal {
+    function removeUserStakedTokenId(uint256 tokenId) public {
         uint256 lastTokenIndex = vaultTokenCount[msg.sender] - 1;
         uint256 tokenIndex = vaultTokenIndex[tokenId];
 
@@ -152,6 +155,14 @@ contract MBStaking is Ownable, IERC721Receiver {
     // rewardmath = 500 ether .... (This gives 5 tokens per day per NFT staked to the staker)
     // rewardmath = 1000 ether .... (This gives 10 tokens per day per NFT staked to the staker)
 
+
+    function getRewardBaseAmount(uint256 tokenId) public view returns (uint256) {
+        if (tokenId >= 8501) {
+            return tier1Reward;
+        }
+        return tier2Reward;
+    }
+
     function _claim(
         address account,
         uint256[] calldata tokenIds,
@@ -166,10 +177,8 @@ contract MBStaking is Ownable, IERC721Receiver {
             Stake memory staked = vault[tokenId];
             require(staked.owner == account, "not an owner");
             uint256 stakedAt = staked.timestamp;
-            rewardmath = (100 ether * (block.timestamp - stakedAt)) / 86400;
+            rewardmath = (getRewardBaseAmount(tokenId) * (block.timestamp - stakedAt)) / 86400;
             earned = rewardmath / 100;
-
-            saveUserStakedTokenId(tokenId);
 
             vault[tokenId] = Stake({
                 owner: account,
@@ -200,7 +209,7 @@ contract MBStaking is Ownable, IERC721Receiver {
             Stake memory staked = vault[tokenId];
             require(staked.owner == account, "not an owner");
             uint256 stakedAt = staked.timestamp;
-            rewardmath = (100 ether * (block.timestamp - stakedAt)) / 86400;
+            rewardmath = (getRewardBaseAmount(tokenId) * (block.timestamp - stakedAt)) / 86400;
             earned = rewardmath / 100;
         }
         if (earned > 0) {
@@ -212,14 +221,10 @@ contract MBStaking is Ownable, IERC721Receiver {
         return vaultTokenCount[account];
     }
 
-    function tokensOfOwner(address account)
-        public
-        view
-        returns (uint256[] memory ownerTokens)
-    {
+    function tokensOfOwner(address account) public view returns (uint256[] memory ownerTokens) {
         uint256 count = vaultTokenCount[account];
         ownerTokens = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
+        for(uint256 i = 0; i < count; i++) {
             ownerTokens[i] = vaultToken[account][i];
         }
     }
