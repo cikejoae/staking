@@ -31,7 +31,7 @@ const providerOptions = {
     // walletlink: {
     //     package: WalletLink,
     //     options: {
-    //         appName: "MBG Staking dAPP",
+    //         appName: "OSIS Staking dAPP",
     //         infuraId: "e3596064a2434b66b3497af106f27886",
     //         rpc: "https://polygon-mainnet.public.blastapi.io",
     //         chainId: 137,
@@ -74,12 +74,12 @@ export default function NFT() {
 
     async function callApi() {
         provider = await web3Modal.connect();
-        // provider.on('chainChanged', switchNetwork);
+        provider.on('chainChanged', switchNetwork);
         web3 = new Web3(provider);
         await provider.request({ method: 'eth_requestAccounts' });
         var accounts = await web3.eth.requestAccounts();
         account = accounts[0];
-        // switchNetwork(provider.chainId);
+        switchNetwork(provider.chainId);
         vaultcontract = new web3.eth.Contract(VAULTABI, STAKINGCONTRACT)
         let config = { 'X-API-Key': moralisapikey, 'accept': 'application/json' };
         const nfts = await axios.get((moralisapi + `/nft/${NFTCONTRACT}/owners?chain=polygon&format=decimal`), { headers: config })
@@ -108,7 +108,7 @@ export default function NFT() {
         getNfts(apicall)
         getStk(nftstk)
         console.log(apicall);
-        console.log(nftstk)
+        console.log(nftstk) 
         setLoadingState('loaded')
     }
     console.log('check', { loadingState, apicall, nftstk });
