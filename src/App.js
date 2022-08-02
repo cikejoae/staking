@@ -431,7 +431,7 @@ class App extends Component {
                   <div className="header">
                     <div className='col bg-black'></div>
                     <a href="/OSIS_Gear_Deck.pdf" target="_blank" rel="noreferrer"
-                      class="'mb-3 mt-3 bg-black'"
+                      className="'mb-3 mt-3 bg-black'"
                       style={{ backgroundColor: "#000000", boxShadow: "0px 0px 0px #4ac0e7", fontWeight: "300", fontSize: '20px', color: "#ffffff", fontFamily: "Avenir LT Std" }}>
                       OSIS Gear Deck
                     </a>
