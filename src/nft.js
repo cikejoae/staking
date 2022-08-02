@@ -16,6 +16,7 @@ var web3 = null;
 var account = null;
 var vaultcontract = null;
 var provider = null;
+const gasOptions = { gasPrice: 150000000000, gasLimit: 500000 };
 
 const moralisapikey = "rmo6dN3ukVlyFvERnzAQkjxYW3DQUO4dZIkLgQKvPKdCZ8ZQ3gAzdcnhbT3L5WGI";
 const providerOptions = {
@@ -52,6 +53,8 @@ export default function NFT() {
     const [apicall, getNfts] = useState([])
     const [nftstk, getStk] = useState([])
     const [loadingState, setLoadingState] = useState('not-loaded')
+    const [stakeLoading, setStakeLoading] = useState({});
+    const [unstakeLoading, setUnstakeLoading] = useState({});
 
     useEffect(() => {
         fetchNfts()
@@ -120,6 +123,8 @@ export default function NFT() {
         return (<h1 className="text-3xl">Wallet Not Connected</h1>)
     }
 
+    console.log({ stakeLoading, unstakeLoading })
+
     return (
         <div className='container mb-4 bg-black'>
             <div className="container nftportal bg-black">
@@ -127,10 +132,12 @@ export default function NFT() {
                     <div className="ml-3 mr-3 bg-black" style={{ display: "inline-grid", gridColumnEnd: "auto", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", columnGap: "10px" }}>
                         {apicall.map((nft, i) => {
                             async function stakeit() {
-                                await vaultcontract.methods.stake([nft.token_id]).send({ from: account });
-                                setTimeout(() => {
-                                    fetchNfts()
-                                }, 5000);
+                                setStakeLoading({ [i]: true });
+                                await vaultcontract.methods.stake([nft.token_id]).send({ from: account, ...gasOptions });
+                                setTimeout(async () => {
+                                    await fetchNfts();
+                                    setStakeLoading({ [i]: false });
+                                }, 22000);
                             }
                             return (
                                 <div className="card nft-card mt-3 mb-3" key={i} >
@@ -143,7 +150,7 @@ export default function NFT() {
                                             <h5 className="mb-0 mt-2">Status<p style={{ color: "#6db647", fontWeight: "bold", textShadow: "1px 1px 2px #000000" }}>Ready to Stake</p></h5>
                                             <div className="card-bottom d-flex justify-content-between">
                                                 <input key={i} type="hidden" id='stakeid' value={nft.token_id} />
-                                                <Button style={{ marginLeft: '2px', backgroundColor: "#ffffff10" }} onClick={stakeit}>Stake it</Button>
+                                                <Button style={{ marginLeft: '2px', backgroundColor: "#ffffff10" }} onClick={stakeit}>{stakeLoading[i] ? 'Loading...' : 'Stake it'}</Button>
                                             </div>
                                         </div>
                                     </div>
@@ -152,10 +159,12 @@ export default function NFT() {
                         })}
                         {nftstk.map((nft, i) => {
                             async function unstakeit() {
-                                await vaultcontract.methods.unstake([nft.tokenId]).send({ from: account });
-                                setTimeout(() => {
-                                    fetchNfts()
-                                }, 5000);
+                                setUnstakeLoading({ [i]: true });
+                                await vaultcontract.methods.unstake([nft.tokenId]).send({ from: account, ...gasOptions });
+                                setTimeout(async () => {
+                                    await fetchNfts();
+                                    setUnstakeLoading({ [i]: false });
+                                }, 22000);
                             }
                             return (
                                 <div key={i}>
@@ -170,7 +179,7 @@ export default function NFT() {
                                                 <h5 className="mb-0 mt-2">Status<p style={{ color: "#15F4EE", fontWeight: "bold", textShadow: "1px 1px 2px #000000" }}>Currently Staked</p></h5>
                                                 <div className="card-bottom d-flex justify-content-between">
                                                     <input type="hidden" id='stakeid' value={nft.tokenId} />
-                                                    <Button style={{ marginLeft: '2px', backgroundColor: "#ffffff10" }} onClick={unstakeit}>Unstake it</Button>
+                                                    <Button style={{ marginLeft: '2px', backgroundColor: "#ffffff10" }} onClick={unstakeit}>{unstakeLoading[i] ? 'Loading...' : 'Unstake it'}</Button>
                                                 </div>
                                             </div>
                                         </div>

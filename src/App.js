@@ -72,7 +72,7 @@ class App extends Component {
   }
 
   async componentDidMount() {
-
+    this.connectwallet();
     await axios.get((polygonscanapi + `?module=stats&action=tokensupply&contractaddress=${NFTCONTRACT}&apikey=${polygonscanapikey}`))
       .then(outputa => {
         this.setState({
@@ -80,20 +80,56 @@ class App extends Component {
         })
         console.log(outputa.data)
       })
-    let config = { 'X-API-Key': moralisapikey, 'accept': 'application/json' };
-    await axios.get((moralisapi + `/nft/${NFTCONTRACT}/owners?chain=polygon&format=decimal`), { headers: config })
-      .then(outputb => {
-        const { result } = outputb.data
-        this.setState({
-          nftdata: result
-        })
-        console.log(outputb.data)
-      })
+  }
+
+   connectwallet = async () => {
+    var provider = await web3Modal.connect();
+    web3 = new Web3(provider);
+    await provider.request({ method: 'eth_requestAccounts' });
+    var accounts = await web3.eth.requestAccounts();
+    account = accounts[0];
+    document.getElementById('wallet-address').textContent = account;
+    contract = new web3.eth.Contract(ABI, NFTCONTRACT);
+    vaultcontract = new web3.eth.Contract(VAULTABI, STAKINGCONTRACT);
+    var getstakednfts = await vaultcontract.methods.tokensOfOwner(account).call();
+    document.getElementById('yournfts').textContent = getstakednfts;
+    var getbalance = Number(await vaultcontract.methods.balanceOf(account).call());
+    document.getElementById('stakedbalance').textContent = getbalance;
+    const arraynft = Array.from(getstakednfts.map(Number));
+    const tokenid = arraynft.filter(Number);
+    var rwdArray = [];
+    tokenid.forEach(async (id) => {
+      var rawearn = await vaultcontract.methods.earningInfo(account, [id]).call();
+      var array = Array.from(rawearn.map(Number));
+      console.log(array);
+      array.forEach(async (item) => {
+        var earned = item.toPrecision(22).split('.')[0]
+        var earnedrwd = Web3.utils.fromWei(earned);
+        var rewardx = Number(earnedrwd).toFixed(2);
+        var numrwd = Number(rewardx);
+        console.log(numrwd);
+        rwdArray.push(numrwd);
+      });
+    });
+    function delay() {
+      return new Promise(resolve => setTimeout(resolve, 300));
+    }
+    async function delayedLog(item) {
+      await delay();
+      var sum = item.reduce((a, b) => a + b, 0);
+      var formatsum = Number(sum).toFixed(2);
+      document.getElementById('earned').textContent = formatsum;
+    }
+    async function processArray(rwdArray) {
+      for (const item of rwdArray) {
+        await delayedLog(item);
+      }
+    }
+    return processArray([rwdArray]);
   }
 
 
   render() {
-    const { balance } = this.state;
     const { outvalue } = this.state;
 
     const sleep = (milliseconds) => {
@@ -101,51 +137,7 @@ class App extends Component {
     }
     const expectedBlockTime = 10000;
 
-    async function connectwallet() {
-      var provider = await web3Modal.connect();
-      web3 = new Web3(provider);
-      await provider.request({ method: 'eth_requestAccounts' });
-      var accounts = await web3.eth.requestAccounts();
-      account = accounts[0];
-      document.getElementById('wallet-address').textContent = account;
-      contract = new web3.eth.Contract(ABI, NFTCONTRACT);
-      vaultcontract = new web3.eth.Contract(VAULTABI, STAKINGCONTRACT);
-      var getstakednfts = await vaultcontract.methods.tokensOfOwner(account).call();
-      document.getElementById('yournfts').textContent = getstakednfts;
-      var getbalance = Number(await vaultcontract.methods.balanceOf(account).call());
-      document.getElementById('stakedbalance').textContent = getbalance;
-      const arraynft = Array.from(getstakednfts.map(Number));
-      const tokenid = arraynft.filter(Number);
-      var rwdArray = [];
-      tokenid.forEach(async (id) => {
-        var rawearn = await vaultcontract.methods.earningInfo(account, [id]).call();
-        var array = Array.from(rawearn.map(Number));
-        console.log(array);
-        array.forEach(async (item) => {
-          var earned = item.toPrecision(22).split('.')[0]
-          var earnedrwd = Web3.utils.fromWei(earned);
-          var rewardx = Number(earnedrwd).toFixed(2);
-          var numrwd = Number(rewardx);
-          console.log(numrwd);
-          rwdArray.push(numrwd);
-        });
-      });
-      function delay() {
-        return new Promise(resolve => setTimeout(resolve, 300));
-      }
-      async function delayedLog(item) {
-        await delay();
-        var sum = item.reduce((a, b) => a + b, 0);
-        var formatsum = Number(sum).toFixed(2);
-        document.getElementById('earned').textContent = formatsum;
-      }
-      async function processArray(rwdArray) {
-        for (const item of rwdArray) {
-          await delayedLog(item);
-        }
-      }
-      return processArray([rwdArray]);
-    }
+
 
     async function verify() {
       var getstakednfts = await vaultcontract.methods.tokensOfOwner(account).call();
@@ -190,6 +182,7 @@ class App extends Component {
       }
       return processArray([rwdArray]);
     }
+  
     async function claimit() {
       var rawnfts = await vaultcontract.methods.tokensOfOwner(account).call();
       const arraynft = Array.from(rawnfts.map(Number));
@@ -315,7 +308,7 @@ class App extends Component {
               </ul>
               <ul className="nav">
                 <li className="nav-item d-flex align-content-center flex-wrap"><a href="https://osis.world/login" target="_blank" rel="noreferrer" className="nav-link link-light px-3">GET OSIS</a></li>
-                <input id="connectbtn" type="button" className="connectbutton" onClick={connectwallet} style={{ class: "nav-item d-flex align-content-center flex-wrap" }} value="Connect Your Wallet" />
+                <input id="connectbtn" type="button" className="connectbutton" onClick={this.connectwallet} style={{ class: "nav-item d-flex align-content-center flex-wrap" }} value="Connect Your Wallet" />
                 {/* <li className="nav-item d-flex align-content-center flex-wrap"><a href="https://osis.world/login" target="_blank" rel="noreferrer" className="nav-link link-light px-3">GET OSIS</a></li> */}
               </ul>
             </div>
